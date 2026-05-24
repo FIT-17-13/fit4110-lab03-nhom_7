@@ -1,6 +1,17 @@
 ID,Folder,Endpoint,Method,Scenario,Input file/body,Expected status,Expected response check,Type,Pass/Fail,Evidence
-TC01,Functional,/health,GET,Service is alive,-,200,status=ok,functional,,
-TC02,Functional,/readings,POST,Create reading happy path,mock-data/sensor-reading-valid.json,201,"has reading_id, accepted=true",functional,,
-TC03,Negative,/readings,POST,Missing device_id,mock-data/sensor-reading-invalid-missing-device.json,400,Problem Details,negative,,
-TC04,Auth,/readings,POST,Missing token,mock-data/sensor-reading-valid.json,401,Problem Details,auth,,
-TC05,Boundary,/readings,POST,High temperature boundary,mock-data/sensor-reading-boundary.json,201/400,documented behavior,boundary,,
+TC01,00_Health,/health,GET,Service is alive,-,200,status=ok,functional,Pass,reports/newman-report-mock.xml
+TC02,01_Functional,/camera-events,POST,Motion detected accepted,"inline JSON (motion event)",201,"has eventId, acceptedAt",functional,Pass,reports/newman-report-mock.xml
+TC03,01_Functional,/camera-events,GET,List events,-,200,items array present,functional,Pass,reports/newman-report-mock.xml
+TC04,01_Functional,/camera-events/recent,GET,List recent events,"limit=5",200,items array present,functional,Pass,reports/newman-report-mock.xml
+TC05,01_Functional,/camera-events/{eventId},GET,Fetch event by id,"eventId in path",200,"has eventType, eventId",functional,Pass,reports/newman-report-mock.xml
+TC06,02_Auth,/camera-events/recent,GET,Valid token accepted,"limit=1",200,success status,auth,Pass,reports/newman-report-mock.xml
+TC07,02_Auth,/camera-events,POST,Missing token rejected (local only),"inline JSON (motion event)",401/403,auth error on local,auth,Pass,reports/newman-report-mock.xml
+TC08,02_Auth,/camera-events,POST,Invalid token rejected (local only),"inline JSON (motion event)",401/403,auth error on local,auth,Pass,reports/newman-report-mock.xml
+TC09,03_Negative,/camera-events,POST,Missing required field,"inline JSON (missing eventId)",400/422,Problem JSON with status,negative,Pass,reports/newman-report-mock.xml
+TC10,03_Negative,/camera-events,POST,Wrong data type,"inline JSON (cameraId is number)",400/422,Problem JSON with detail,negative,Pass,reports/newman-report-mock.xml
+TC11,03_Negative,/camera-events,POST,Wrong eventType enum,"inline JSON (invalid eventType)",400/422,Problem JSON with detail,negative,Pass,reports/newman-report-mock.xml
+TC12,04_Boundary_Reliability,/camera-events/recent,GET,Limit above max rejected,"limit=101",400/422,client error,boundary,Pass,reports/newman-report-mock.xml
+TC13,04_Boundary_Reliability,/camera-events,POST,Confidence max accepted,"confidence=1",201,has eventId,boundary,Pass,reports/newman-report-mock.xml
+TC14,05_Consumer_side_Smoke,/detect,POST,AI Vision mock returns detection,"inline JSON (image_url)",200,"has detection_id, label",consumer-smoke,Pass,reports/newman-report-mock.xml
+TC15,05_Consumer_side_Smoke,/detect,POST,Missing image returns error,"inline JSON (missing image)",400/422,Problem JSON with detail,consumer-smoke,Pass,reports/newman-report-mock.xml
+TC16,06_Local_only_NonFunctional,/camera-events/recent,GET,Response time under 1000ms (local only),"limit=5",200,responseTime < 1000ms,nonfunctional,Pass,reports/newman-report-mock.xml

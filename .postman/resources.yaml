@@ -1,0 +1,8 @@
+# Use this workspace to collaborate
+workspace:
+  id: 34054f43-09b9-441c-8035-3b84131464b4
+
+localResources:
+  specs:
+    - ../contracts/ai-vision.openapi.yaml
+    - ../contracts/iot-ingestion.openapi.yaml

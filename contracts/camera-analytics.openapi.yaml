@@ -1,0 +1,628 @@
+openapi: 3.1.0
+info:
+  title: Smart Campus — Camera Stream to Analytics
+  version: 0.3.0
+  description: |
+    REST facade contract for the async dependency Camera Stream -> Analytics.
+    Used in Lab 03 for Postman/Newman contract tests with Prism mock server.
+  contact:
+    name: FIT4110 Teaching Team
+    email: fit4110@example.edu.vn
+servers:
+  - url: http://localhost:4010
+    description: Prism mock server
+  - url: http://localhost:8000
+    description: Local development server
+tags:
+  - name: health
+    description: Service health checks
+  - name: camera-events
+    description: Capture and query camera events
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Service health check
+      description: Endpoint to verify the service is running.
+      tags: [health]
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    service: camera-analytics-contract
+                    time: "2026-05-10T08:00:00Z"
+
+  /camera-events:
+    post:
+      operationId: createCameraEvent
+      summary: Ingest a camera event
+      description: |
+        Camera Stream sends events to Analytics. REST facade for async mocking.
+      tags: [camera-events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CameraEvent"
+            examples:
+              motionDetected:
+                value:
+                  eventType: camera.motion.detected
+                  eventId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+                  occurredAt: "2026-05-10T08:00:00Z"
+                  cameraId: CAM-007
+                  sourceService: camera-stream
+                  correlationId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b000
+                  detectionId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b111
+                  motionType: HUMAN
+                  imageRef: https://cdn.campus.local/camera/CAM-007/frame-001.jpg
+                  confidence: 0.92
+              frameAnalyzed:
+                value:
+                  eventType: camera.frame.analyzed
+                  eventId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babd
+                  occurredAt: "2026-05-10T08:01:00Z"
+                  cameraId: CAM-007
+                  sourceService: camera-stream
+                  correlationId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b000
+                  detectionId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b111
+                  imageRef: https://cdn.campus.local/camera/CAM-007/frame-001.jpg
+                  analysisSummary:
+                    objectsDetected: 2
+                    abnormal: false
+                    confidence: 0.87
+              statusChanged:
+                value:
+                  eventType: camera.status.changed
+                  eventId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babe
+                  occurredAt: "2026-05-10T08:02:00Z"
+                  cameraId: CAM-007
+                  sourceService: camera-stream
+                  correlationId: null
+                  status: OFFLINE
+                  reason: No heartbeat
+                  offlineSince: "2026-05-10T07:57:00Z"
+      responses:
+        "201":
+          description: Event accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventAccepted"
+              examples:
+                accepted:
+                  value:
+                    eventId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+                    acceptedAt: "2026-05-10T08:00:01Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      operationId: listCameraEvents
+      summary: List camera events
+      description: Cursor-based pagination for events.
+      tags: [camera-events]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Event list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CameraEventPage"
+              examples:
+                firstPage:
+                  value:
+                    items:
+                      - eventType: camera.motion.detected
+                        eventId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2babc
+                        occurredAt: "2026-05-10T08:00:00Z"
+                        cameraId: CAM-007
+                        sourceService: camera-stream
+                        correlationId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b000
+                        detectionId: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b111
+                        motionType: HUMAN
+                        imageRef: https://cdn.campus.local/camera/CAM-007/frame-001.jpg
+                        confidence: 0.92
+                    nextCursor: null
+                    hasMore: false
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /camera-events/recent:
+    get:
+      operationId: getRecentCameraEvents
+      summary: Get recent camera events
+      description: Fast query for most recent events.
+      tags: [camera-events]
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Max number of events to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Recent event list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CameraEventList"
+              examples:
+                recentEvents:
+                  value:
+                    items: []
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /camera-events/{eventId}:
+    get:
+      operationId: getCameraEventById
+      summary: Get camera event details
+      description: Lookup a camera event by UUID.
+      tags: [camera-events]
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CameraEvent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      description: Event UUID.
+      schema:
+        type: string
+        format: uuid
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Cursor for the next page.
+      schema:
+        type: [string, "null"]
+        minLength: 1
+        maxLength: 200
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Max items per page.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    HealthStatus:
+      type: object
+      additionalProperties: false
+      required: [status, service, time]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Service status.
+          example: ok
+        service:
+          type: string
+          minLength: 2
+          maxLength: 80
+          description: Service name.
+          example: camera-analytics-contract
+        time:
+          type: string
+          format: date-time
+          description: Health check time.
+          example: "2026-05-10T08:00:00Z"
+
+    CameraEvent:
+      oneOf:
+        - $ref: "#/components/schemas/MotionDetectedEvent"
+        - $ref: "#/components/schemas/FrameAnalyzedEvent"
+        - $ref: "#/components/schemas/CameraStatusChangedEvent"
+      discriminator:
+        propertyName: eventType
+        mapping:
+          camera.motion.detected: "#/components/schemas/MotionDetectedEvent"
+          camera.frame.analyzed: "#/components/schemas/FrameAnalyzedEvent"
+          camera.status.changed: "#/components/schemas/CameraStatusChangedEvent"
+
+    MotionDetectedEvent:
+      type: object
+      additionalProperties: false
+      required: [eventType, eventId, occurredAt, cameraId, sourceService, motionType]
+      properties:
+        eventType:
+          type: string
+          const: camera.motion.detected
+          description: Event type.
+          example: camera.motion.detected
+        eventId:
+          type: string
+          format: uuid
+          description: Event UUID.
+        occurredAt:
+          type: string
+          format: date-time
+          description: Motion detection time.
+        cameraId:
+          type: string
+          pattern: "^CAM-[0-9]{3}$"
+          description: Camera ID.
+          example: CAM-007
+        sourceService:
+          type: string
+          minLength: 2
+          maxLength: 80
+          pattern: "^[a-z0-9-]+$"
+          description: Source service name.
+          example: camera-stream
+        correlationId:
+          type: [string, "null"]
+          format: uuid
+          description: Correlation id if present.
+          example: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b000
+        detectionId:
+          type: [string, "null"]
+          format: uuid
+          description: Detection id if present.
+          example: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b111
+        motionType:
+          type: string
+          enum: [HUMAN, VEHICLE, UNKNOWN]
+          description: Motion type.
+          example: HUMAN
+        imageRef:
+          type: [string, "null"]
+          format: uri
+          description: Image reference URL (no raw image).
+          example: https://cdn.campus.local/camera/CAM-007/frame-001.jpg
+        confidence:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 1
+          description: Confidence if provided.
+          example: 0.92
+
+    FrameAnalyzedEvent:
+      type: object
+      additionalProperties: false
+      required: [eventType, eventId, occurredAt, cameraId, sourceService, imageRef, analysisSummary]
+      properties:
+        eventType:
+          type: string
+          const: camera.frame.analyzed
+          description: Event type.
+          example: camera.frame.analyzed
+        eventId:
+          type: string
+          format: uuid
+          description: Event UUID.
+        occurredAt:
+          type: string
+          format: date-time
+          description: Frame analysis time.
+        cameraId:
+          type: string
+          pattern: "^CAM-[0-9]{3}$"
+          description: Camera ID.
+          example: CAM-007
+        sourceService:
+          type: string
+          minLength: 2
+          maxLength: 80
+          pattern: "^[a-z0-9-]+$"
+          description: Source service name.
+          example: camera-stream
+        correlationId:
+          type: [string, "null"]
+          format: uuid
+          description: Correlation id if present.
+          example: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b000
+        detectionId:
+          type: [string, "null"]
+          format: uuid
+          description: Detection id if present.
+          example: 0196fb3d-4ad7-7d1e-9f49-5d5148d2b111
+        imageRef:
+          type: string
+          format: uri
+          description: Image reference URL (no raw image).
+          example: https://cdn.campus.local/camera/CAM-007/frame-001.jpg
+        analysisSummary:
+          type: object
+          additionalProperties: false
+          required: [objectsDetected, abnormal]
+          properties:
+            objectsDetected:
+              type: integer
+              minimum: 0
+              maximum: 999
+              description: Number of detected objects.
+              example: 2
+            abnormal:
+              type: boolean
+              description: Abnormal flag.
+              example: false
+            confidence:
+              type: [number, "null"]
+              minimum: 0
+              maximum: 1
+              description: Confidence if provided.
+              example: 0.87
+
+    CameraStatusChangedEvent:
+      type: object
+      additionalProperties: false
+      required: [eventType, eventId, occurredAt, cameraId, sourceService, status]
+      properties:
+        eventType:
+          type: string
+          const: camera.status.changed
+          description: Event type.
+          example: camera.status.changed
+        eventId:
+          type: string
+          format: uuid
+          description: Event UUID.
+        occurredAt:
+          type: string
+          format: date-time
+          description: Status change time.
+        cameraId:
+          type: string
+          pattern: "^CAM-[0-9]{3}$"
+          description: Camera ID.
+          example: CAM-007
+        sourceService:
+          type: string
+          minLength: 2
+          maxLength: 80
+          pattern: "^[a-z0-9-]+$"
+          description: Source service name.
+          example: camera-stream
+        correlationId:
+          type: [string, "null"]
+          format: uuid
+          description: Correlation id if present.
+          example: null
+        status:
+          type: string
+          enum: [ONLINE, OFFLINE, DEGRADED]
+          description: Camera status.
+          example: OFFLINE
+        reason:
+          type: [string, "null"]
+          minLength: 3
+          maxLength: 200
+          description: Optional reason for status change.
+          example: No heartbeat
+        offlineSince:
+          type: [string, "null"]
+          format: date-time
+          description: When the camera went offline.
+          example: "2026-05-10T07:57:00Z"
+
+    CameraEventPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor, hasMore]
+      properties:
+        items:
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/CameraEvent"
+        nextCursor:
+          type: [string, "null"]
+          description: Next cursor or null when no more data.
+          example: null
+        hasMore:
+          type: boolean
+          description: Whether more data exists.
+          example: false
+
+    CameraEventList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 0
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/CameraEvent"
+
+    EventAccepted:
+      type: object
+      additionalProperties: false
+      required: [eventId, acceptedAt]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Accepted event UUID.
+        acceptedAt:
+          type: string
+          format: date-time
+          description: Time when event was accepted.
+
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Error type URI.
+          example: https://campus.local/errors/validation
+        title:
+          type: string
+          minLength: 3
+          maxLength: 120
+          description: Short error title.
+          example: Validation error
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          description: HTTP status code.
+          example: 400
+        detail:
+          type: [string, "null"]
+          maxLength: 500
+          description: Detailed error description.
+          example: eventId is required
+        instance:
+          type: [string, "null"]
+          format: uri
+          description: Request URI.
+          example: https://api.campus.local/camera-events
+        errors:
+          type: array
+          minItems: 0
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, code, message]
+            properties:
+              field:
+                type: string
+                minLength: 1
+                maxLength: 80
+                example: eventId
+              code:
+                type: string
+                minLength: 2
+                maxLength: 80
+                example: REQUIRED
+              message:
+                type: string
+                minLength: 3
+                maxLength: 200
+                example: eventId is required
+
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: https://campus.local/errors/validation
+            title: Validation error
+            status: 400
+            detail: Payload does not match JSON schema
+            instance: https://api.campus.local/camera-events
+            errors:
+              - field: eventType
+                code: ENUM_MISMATCH
+                message: eventType is not allowed
+
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          example:
+            type: https://campus.local/errors/unauthorized
+            title: Unauthorized
+            status: 401
+            detail: Missing bearer token
+            instance: https://api.campus.local/camera-events
+            errors: []
+
+    Forbidden:
+      description: Caller is not allowed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    Conflict:
+      description: Business conflict or duplicate eventId
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    UnprocessableEntity:
+      description: Well-formed but invalid payload
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"

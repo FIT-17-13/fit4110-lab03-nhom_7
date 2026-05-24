@@ -1,0 +1,504 @@
+{
+  "info": {
+    "name": "FIT4110 Lab03 - Camera Analytics Contract Tests",
+    "_postman_id": "5b9c0b3a-2db0-4d1d-9c2d-5c7b1f9a7c2a",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00_Health",
+      "item": [
+        {
+          "name": "GET /health - service is alive",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response has service status', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('status', 'ok');",
+                  "  pm.expect(json).to.have.property('service');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01_Functional",
+      "item": [
+        {
+          "name": "POST /camera-events - motion detected accepted",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"eventType\":\"camera.motion.detected\",\"eventId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2babc\",\"occurredAt\":\"2026-05-10T08:00:00Z\",\"cameraId\":\"CAM-007\",\"sourceService\":\"camera-stream\",\"correlationId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2b000\",\"detectionId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2b111\",\"motionType\":\"HUMAN\",\"imageRef\":\"https://cdn.campus.local/camera/CAM-007/frame-001.jpg\",\"confidence\":0.92}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/camera-events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Response has accepted fields', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('eventId');",
+                  "  pm.expect(json).to.have.property('acceptedAt');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /camera-events - list events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/camera-events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response has items array', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('items');",
+                  "  pm.expect(Array.isArray(json.items)).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /camera-events/recent - list recent events",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/camera-events/recent?limit=5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response has items array', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('items');",
+                  "  pm.expect(Array.isArray(json.items)).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /camera-events/{eventId} - fetch event by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/camera-events/0196fb3d-4ad7-7d1e-9f49-5d5148d2babc"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response has event fields', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('eventType');",
+                  "  pm.expect(json).to.have.property('eventId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02_Auth",
+      "item": [
+        {
+          "name": "GET /camera-events/recent - valid token is accepted",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/camera-events/recent?limit=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Valid token request returns success', function () { pm.expect(pm.response.code).to.eql(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /camera-events - missing token is rejected on real service",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"eventType\":\"camera.motion.detected\",\"eventId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2babc\",\"occurredAt\":\"2026-05-10T08:00:00Z\",\"cameraId\":\"CAM-007\",\"sourceService\":\"camera-stream\",\"correlationId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2b000\",\"detectionId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2b111\",\"motionType\":\"HUMAN\",\"imageRef\":\"https://cdn.campus.local/camera/CAM-007/frame-001.jpg\",\"confidence\":0.92}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/camera-events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const env = pm.environment.get('env') || 'mock';",
+                  "if (env === 'mock') {",
+                  "  pm.test('Skipped on mock: Prism does not enforce real auth', function () { pm.expect(true).to.eql(true); });",
+                  "} else {",
+                  "  pm.test('Missing token returns 401 or 403', function () { pm.expect([401, 403]).to.include(pm.response.code); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /camera-events - invalid token is rejected on real service",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer invalid-token" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"eventType\":\"camera.motion.detected\",\"eventId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2babc\",\"occurredAt\":\"2026-05-10T08:00:00Z\",\"cameraId\":\"CAM-007\",\"sourceService\":\"camera-stream\",\"correlationId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2b000\",\"detectionId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2b111\",\"motionType\":\"HUMAN\",\"imageRef\":\"https://cdn.campus.local/camera/CAM-007/frame-001.jpg\",\"confidence\":0.92}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/camera-events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const env = pm.environment.get('env') || 'mock';",
+                  "if (env === 'mock') {",
+                  "  pm.test('Skipped on mock: Prism does not enforce real auth', function () { pm.expect(true).to.eql(true); });",
+                  "} else {",
+                  "  pm.test('Invalid token returns 401 or 403', function () { pm.expect([401, 403]).to.include(pm.response.code); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03_Negative",
+      "item": [
+        {
+          "name": "POST /camera-events - missing required field returns validation error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Prefer", "value": "code=400" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"eventType\":\"camera.motion.detected\",\"occurredAt\":\"2026-05-10T08:00:00Z\",\"cameraId\":\"CAM-007\",\"sourceService\":\"camera-stream\",\"motionType\":\"HUMAN\",\"imageRef\":\"https://cdn.campus.local/camera/CAM-007/frame-001.jpg\",\"confidence\":0.92}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/camera-events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Invalid payload returns client error', function () { pm.expect([400, 422]).to.include(pm.response.code); });",
+                  "pm.test('Error response has status', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('status');",
+                  "  pm.expect(json.status).to.be.within(400, 599);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /camera-events - wrong data type returns validation error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Prefer", "value": "code=400" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"eventType\":\"camera.motion.detected\",\"eventId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2babc\",\"occurredAt\":\"2026-05-10T08:00:00Z\",\"cameraId\":7,\"sourceService\":\"camera-stream\",\"motionType\":\"HUMAN\",\"imageRef\":\"https://cdn.campus.local/camera/CAM-007/frame-001.jpg\",\"confidence\":0.92}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/camera-events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Wrong data type returns client error', function () { pm.expect([400, 422]).to.include(pm.response.code); });",
+                  "pm.test('Error response has detail', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('detail');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /camera-events - wrong eventType enum returns validation error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Prefer", "value": "code=400" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"eventType\":\"camera.motion.unknown\",\"eventId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2babc\",\"occurredAt\":\"2026-05-10T08:00:00Z\",\"cameraId\":\"CAM-007\",\"sourceService\":\"camera-stream\",\"motionType\":\"HUMAN\",\"imageRef\":\"https://cdn.campus.local/camera/CAM-007/frame-001.jpg\",\"confidence\":0.92}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/camera-events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Wrong eventType returns client error', function () { pm.expect([400, 422]).to.include(pm.response.code); });",
+                  "pm.test('Error response has detail', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('detail');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04_Boundary_Reliability",
+      "item": [
+        {
+          "name": "GET /camera-events/recent - limit above max is rejected",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Prefer", "value": "code=400" }
+            ],
+            "url": "{{baseUrl}}/camera-events/recent?limit=101"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Limit above max returns client error', function () { pm.expect([400, 422]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /camera-events - confidence max is accepted",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"eventType\":\"camera.motion.detected\",\"eventId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2babc\",\"occurredAt\":\"2026-05-10T08:00:00Z\",\"cameraId\":\"CAM-007\",\"sourceService\":\"camera-stream\",\"correlationId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2b000\",\"detectionId\":\"0196fb3d-4ad7-7d1e-9f49-5d5148d2b111\",\"motionType\":\"HUMAN\",\"imageRef\":\"https://cdn.campus.local/camera/CAM-007/frame-001.jpg\",\"confidence\":1}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/camera-events"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Boundary value at max returns success', function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.test('Response confirms accepted event', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('eventId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05_Consumer_side_Smoke",
+      "item": [
+        {
+          "name": "POST /detect - AI Vision mock returns detection",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"camera_id\":\"CAM01\",\"image_url\":\"https://example.com/frame.jpg\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{aiVisionMockUrl}}/detect"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Response has detection fields', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('detection_id');",
+                  "  pm.expect(json).to.have.property('label');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /detect - missing image returns error",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "Prefer", "value": "code=400" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"camera_id\":\"CAM01\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{aiVisionMockUrl}}/detect"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Invalid payload returns client error', function () { pm.expect([400, 422]).to.include(pm.response.code); });",
+                  "pm.test('Error response has detail', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('detail');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06_Local_only_NonFunctional",
+      "item": [
+        {
+          "name": "GET /camera-events/recent - response time under 1000ms (local only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "url": "{{baseUrl}}/camera-events/recent?limit=5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const env = pm.environment.get('env') || 'mock';",
+                  "if (env === 'local') {",
+                  "  pm.test('Response time is below 1000ms on local service', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                  "  });",
+                  "} else {",
+                  "  pm.test('Skipped on mock: latency checks are local-only', function () { pm.expect(true).to.eql(true); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -3,11 +3,11 @@
 Trước khi nộp, repo nhóm cần có:
 
 ```text
-contracts/<team>.openapi.yaml
-postman/collections/<team>.postman_collection.json
-postman/environments/<team>_mock.postman_environment.json
-postman/environments/<team>_local.postman_environment.json
-reports/newman-report.xml hoặc reports/newman-report.html
+contracts/camera-analytics.openapi.yaml
+postman/collections/FIT4110_lab03_camera_analytics.postman_collection.json
+postman/environments/FIT4110_lab03_camera_analytics_mock.postman_environment.json
+postman/environments/FIT4110_lab03_camera_analytics_local.postman_environment.json
+reports/newman-report-mock.xml hoặc reports/newman-report.html
 checklists/reliability_checklist.md
 templates/test-case-matrix.csv
 templates/consumer-provider-handshake.md
