@@ -546,7 +546,7 @@ jobs:
         run: nohup npm run mock:iot > prism.log 2>&1 &
 
       - name: Wait for mock server
-        run: npx wait-on http://localhost:4010/health --timeout 30000
+        run: npx wait-on http-get://localhost:4010/health --timeout 30000
 
       - name: Run Newman on mock environment
         run: npm run test:mock
